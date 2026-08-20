@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tls-shop
+
+resources:
+  - namespace.yaml
+  - mongodb.yaml
+  - app.yaml
+
+# NOTE: the TLS secrets (mongo-certs, app-truststore, app-secrets) are NOT generated
+# here — kustomize refuses file sources outside its own dir, and we don't want private
+# key material committed in git anyway. They are created imperatively from the output
+# of scripts/gen-certs.sh; see k8s/deploy.sh (or the README). Manifests reference them
+# by the stable names: mongo-certs, app-truststore, app-secrets.

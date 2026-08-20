@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: tls-shop
+  labels: { app: mongodb }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: mongodb }
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: { app: mongodb }
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          args:
+            - --tlsMode=requireTLS
+            - --tlsCertificateKeyFile=/etc/mongo/certs/mongodb.pem
+            - --tlsCAFile=/etc/mongo/certs/ca.crt
+            - --tlsAllowConnectionsWithoutCertificates   # one-way TLS, no client cert
+          ports:
+            - containerPort: 27017
+              name: mongo
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/mongo/certs
+              readOnly: true
+            - name: data
+              mountPath: /data/db
+          readinessProbe:
+            tcpSocket: { port: 27017 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: { port: 27017 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits:   { cpu: "1",    memory: "1Gi" }
+      volumes:
+        - name: certs
+          secret:
+            secretName: mongo-certs   # ca.crt + mongodb.pem (mode 0644, readable by uid 999)
+            defaultMode: 0644
+        - name: data
+          emptyDir: {}                # demo: not persisted across pod restarts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb          # <-- DNS name that matches the server cert SAN (DNS: mongodb)
+  namespace: tls-shop
+  labels: { app: mongodb }
+spec:
+  selector: { app: mongodb }
+  ports:
+    - port: 27017
+      targetPort: 27017
+      name: mongo

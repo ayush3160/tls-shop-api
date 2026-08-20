@@ -1,0 +1,39 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: tls-shop-api
+  data:
+    mongodb:
+      # Full connection string wins if provided. For Atlas use a mongodb+srv:// URI with tls=true.
+      # Example local TLS mongod:
+      #   mongodb://localhost:27017/shopdb?tls=true
+      uri: ${MONGODB_URI:mongodb://localhost:27017/shopdb?tls=true}
+      database: ${MONGODB_DATABASE:shopdb}
+
+# Custom TLS behaviour for the Mongo driver.
+#  - tls.enabled           : turn TLS on/off (should match the ?tls= in the URI)
+#  - tls.trust-store        : optional custom truststore (JKS/PKCS12) of CA certs to trust
+#  - tls.allow-invalid-certs: dev-only escape hatch for self-signed servers
+# NOTE: this is CA-based validation, NOT certificate pinning. No specific server
+#       certificate/public-key is hardcoded, so the server cert can rotate freely.
+app:
+  mongo:
+    tls:
+      enabled: ${MONGO_TLS_ENABLED:true}
+      trust-store: ${MONGO_TLS_TRUSTSTORE:}
+      trust-store-password: ${MONGO_TLS_TRUSTSTORE_PASSWORD:}
+      trust-store-type: ${MONGO_TLS_TRUSTSTORE_TYPE:PKCS12}
+      allow-invalid-certs: ${MONGO_TLS_ALLOW_INVALID:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    io.keploy.shop: INFO
+    org.mongodb.driver: WARN

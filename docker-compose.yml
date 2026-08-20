@@ -1,0 +1,33 @@
+# MongoDB configured to require TLS. One-way TLS: clients validate the server
+# cert against the CA (see scripts/gen-certs.sh) but are NOT required to present
+# a client cert, and nothing is pinned.
+#
+# Prereq: run ./scripts/gen-certs.sh first to populate ./certs.
+#
+#   docker compose up -d mongodb
+#
+services:
+  mongodb:
+    image: mongo:7
+    container_name: tls-shop-mongo
+    command: >
+      --tlsMode requireTLS
+      --tlsCertificateKeyFile /etc/mongo/certs/mongodb.pem
+      --tlsCAFile /etc/mongo/certs/ca.crt
+      --tlsAllowConnectionsWithoutCertificates
+    ports:
+      - "27019:27017"
+    volumes:
+      - ./certs:/etc/mongo/certs:ro
+      - mongo-data:/data/db
+    healthcheck:
+      # mongosh must itself speak TLS to run the ping.
+      test: >
+        mongosh --tls --tlsCAFile /etc/mongo/certs/ca.crt
+        --host localhost --eval "db.runCommand({ ping: 1 })" --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo-data:

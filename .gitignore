@@ -1,0 +1,6 @@
+target/
+certs/
+*.log
+.idea/
+*.iml
+.DS_Store
